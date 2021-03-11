@@ -123,4 +123,105 @@ dopo aver installato i pacchetti essenziali mi ritrovo alla pagina principale di
 Welcome to Jenkins!
 This page is where your Jenkins jobs will be displayed. To get started, you can set up distributed builds or start building a software project.
 
+## ho creato un altro box e installato haproxy
 
+sudo yum install haproxy
+
+cd /etc/haproxy
+
+vi haproxy.cfg
+
+```
+[root@localhost haproxy]# cat haproxy.cfg 
+# If you already have an haproxy.cfg file, you can probably leave the
+# global and defaults section as-is, but you might need to increase the
+# timeouts so that long-running CLI commands will work.
+global
+    maxconn 4096
+    log 127.0.0.1 local0 debug
+
+defaults
+   log global
+   option httplog
+   option dontlognull
+   option forwardfor
+   maxconn 20
+   timeout connect 5s
+   timeout client 60s
+   timeout server 60s
+
+frontend http-in
+   bind *:80
+   mode http
+   acl prefixed-with-jenkins  path_beg /jenkins/
+   acl host-is-jenkins-example   hdr(host) eq jenkins.example.com
+   use_backend jenkins if host-is-jenkins-example prefixed-with-jenkins
+
+backend jenkins
+   server jenkins1 192.168.1.215:8080
+   mode http
+   reqrep ^([^\ :]*)\ /(.*) \1\ /\2
+   acl response-is-redirect res.hdr(Location) -m found
+   # Must combine following two lines into a SINGLE LINE for HAProxy
+   rspirep ^Location:\ (http|https)://192.168.1.215:8080/jenkins/(.*) Location:\ \1://jenkins.example.com/jenkins/\2 if response-is-redirect
+```
+
+## ho editato il file seguendo la configurazione, mettendo l'indirizzo ip 192.168.1.215 dell'altra macchina vagrant dove gira jenkins con docker
+
+```
+[vagrant@localhost haproxy]$ sudo systemctl enable haproxy
+Created symlink from /etc/systemd/system/multi-user.target.wants/haproxy.service to /usr/lib/systemd/system/haproxy.service.
+```
+
+```
+[vagrant@localhost haproxy]$ sudo systemctl status haproxy
+● haproxy.service - HAProxy Load Balancer
+   Loaded: loaded (/usr/lib/systemd/system/haproxy.service; disabled; vendor preset: disabled)
+   Active: inactive (dead)
+[vagrant@localhost haproxy]$ sudo systemctl start haproxy
+[vagrant@localhost haproxy]$ sudo systemctl status haproxy
+● haproxy.service - HAProxy Load Balancer
+   Loaded: loaded (/usr/lib/systemd/system/haproxy.service; enabled; vendor preset: disabled)
+   Active: active (running) since Thu 2021-03-11 14:39:37 UTC; 3s ago
+ Main PID: 1139 (haproxy-systemd)
+   CGroup: /system.slice/haproxy.service
+           ├─1139 /usr/sbin/haproxy-systemd-wrapper -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid
+           ├─1141 /usr/sbin/haproxy -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid -Ds
+           └─1142 /usr/sbin/haproxy -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid -Ds
+
+Mar 11 14:39:37 localhost.localdomain systemd[1]: Stopped HAProxy Load Balancer.
+Mar 11 14:39:37 localhost.localdomain systemd[1]: Started HAProxy Load Balancer.
+Mar 11 14:39:37 localhost.localdomain haproxy-systemd-wrapper[1139]: haproxy-systemd-wrapper: executing /usr/sbin/haproxy -f /etc/haproxy/haproxy.cfg -p /run/...pid -Ds
+Hint: Some lines were ellipsized, use -l to show in full.
+```
+
+
+## haproxy sta ascoltando su tutte le interfacce...
+
+```
+[vagrant@localhost haproxy]$ sudo netstat -antp
+Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      1142/haproxy        
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      673/sshd            
+tcp        0      0 127.0.0.1:25            0.0.0.0:*               LISTEN      893/master          
+tcp        0      0 0.0.0.0:111             0.0.0.0:*               LISTEN      370/rpcbind         
+tcp        0      0 10.0.2.15:22            10.0.2.2:35130          ESTABLISHED 911/sshd: vagrant [ 
+tcp6       0      0 :::22                   :::*                    LISTEN      673/sshd            
+tcp6       0      0 ::1:25                  :::*                    LISTEN      893/master          
+tcp6       0      0 :::111                  :::*                    LISTEN      370/rpcbind    
+
+
+[vagrant@localhost haproxy]$ ifconfig
+eth1: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 192.168.1.199  netmask 255.255.255.0  broadcast 192.168.1.255
+        inet6 fe80::18e7:337c:e06f:a050  prefixlen 64  scopeid 0x20<link>
+        ether 08:00:27:02:20:22  txqueuelen 1000  (Ethernet)
+        RX packets 294  bytes 20908 (20.4 KiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 117  bytes 10608 (10.3 KiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+```
+
+
+però per qualche motivo haproxy non redirige il traffico verso l'host di jenkins installato sull'altra macchina vagrant
