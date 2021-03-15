@@ -226,7 +226,7 @@ eth1: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 
 ## ho editato il file haproxy.cfg
 
-
+```
 frontend http-in
    bind *:80
    mode http
@@ -234,6 +234,7 @@ frontend http-in
    acl host-is-jenkins-example   hdr(host) eq jenkins.example.com
    # use_backend jenkins if host-is-jenkins-example prefixed-with-jenkins
    use_backend jenkins 
+```
 
 Raggiungo il backend di jenkins all'indirizzo 192.168.1.199
 
