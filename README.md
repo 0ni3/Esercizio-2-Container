@@ -246,13 +246,13 @@ edito il file di configurazione di apache per indirizzarlo sulla porta 443
 ```
 
 ```
- Listen: Allows you to bind Apache to specific IP addresses and/or
- ports, instead of the default. See also the <VirtualHost>
- directive.
+  #Listen: Allows you to bind Apache to specific IP addresses and/or
+  #ports, instead of the default. See also the <VirtualHost>
+  #directive.
 
- Change this to Listen on specific IP addresses as shown below to
- prevent Apache from glomming onto all bound IP addresses.
- Listen 12.34.56.78:80
+  #Change this to Listen on specific IP addresses as shown below to
+  #prevent Apache from glomming onto all bound IP addresses.
+  #Listen 12.34.56.78:80
 
 Listen 443
 ```
