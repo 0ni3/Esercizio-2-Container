@@ -226,6 +226,7 @@ eth1: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 
 ## ho editato il file haproxy.cfg
 
+
 frontend http-in
    bind *:80
    mode http
@@ -244,15 +245,14 @@ edito il file di configurazione di apache per indirizzarlo sulla porta 443
 ```
 
 ```
-#
-# Listen: Allows you to bind Apache to specific IP addresses and/or
-# ports, instead of the default. See also the <VirtualHost>
-# directive.
-#
-# Change this to Listen on specific IP addresses as shown below to
-# prevent Apache from glomming onto all bound IP addresses.
-#
-#Listen 12.34.56.78:80
+ Listen: Allows you to bind Apache to specific IP addresses and/or
+ ports, instead of the default. See also the <VirtualHost>
+ directive.
+
+ Change this to Listen on specific IP addresses as shown below to
+ prevent Apache from glomming onto all bound IP addresses.
+ Listen 12.34.56.78:80
+
 Listen 443
 ```
 
