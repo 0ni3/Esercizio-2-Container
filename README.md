@@ -196,7 +196,7 @@ Hint: Some lines were ellipsized, use -l to show in full.
 ```
 
 
-## haproxy sta ascoltando su tutte le interfacce...
+## haproxy sta ascoltando su tutte le interfacce
 
 ```
 [vagrant@localhost haproxy]$ sudo netstat -antp
@@ -224,4 +224,40 @@ eth1: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 ```
 
 
-però per qualche motivo haproxy non redirige il traffico verso l'host di jenkins installato sull'altra macchina vagrant
+## ho editato il file haproxy.cfg
+
+frontend http-in
+   bind *:80
+   mode http
+   # acl prefixed-with-jenkins  path_beg /jenkins/
+   acl host-is-jenkins-example   hdr(host) eq jenkins.example.com
+   # use_backend jenkins if host-is-jenkins-example prefixed-with-jenkins
+   use_backend jenkins 
+
+Raggiungo il backend di jenkins all'indirizzo 192.168.1.199
+
+edito il file di configurazione di apache per indirizzarlo sulla porta 443
+
+```
+[vagrant@localhost conf]$ cd /etc/httpd/conf
+[vagrant@localhost conf]$ vi httpd.conf 
+```
+
+#
+# Listen: Allows you to bind Apache to specific IP addresses and/or
+# ports, instead of the default. See also the <VirtualHost>
+# directive.
+#
+# Change this to Listen on specific IP addresses as shown below to
+# prevent Apache from glomming onto all bound IP addresses.
+#
+#Listen 12.34.56.78:80
+Listen 443
+
+ritorno sulla macchina dove ho haproxy attivo, e faccio un backup del file di configurazione
+
+```
+[vagrant@localhost haproxy]$ sudo cp haproxy.cfg haproxy.cfg.bck 
+[vagrant@localhost haproxy]$ ls
+haproxy.cfg  haproxy.cfg.bck
+```
