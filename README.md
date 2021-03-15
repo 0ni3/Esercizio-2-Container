@@ -243,6 +243,7 @@ edito il file di configurazione di apache per indirizzarlo sulla porta 443
 [vagrant@localhost conf]$ vi httpd.conf 
 ```
 
+```
 #
 # Listen: Allows you to bind Apache to specific IP addresses and/or
 # ports, instead of the default. See also the <VirtualHost>
@@ -253,6 +254,7 @@ edito il file di configurazione di apache per indirizzarlo sulla porta 443
 #
 #Listen 12.34.56.78:80
 Listen 443
+```
 
 ritorno sulla macchina dove ho haproxy attivo, e faccio un backup del file di configurazione
 
