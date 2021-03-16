@@ -264,3 +264,89 @@ ritorno sulla macchina dove ho haproxy attivo, e faccio un backup del file di co
 [vagrant@localhost haproxy]$ ls
 haproxy.cfg  haproxy.cfg.bck
 ```
+
+in /etc/hosts della mia macchina: 
+
+```
+127.0.0.1	localhost
+127.0.1.1	mint
+
+192.168.1.199 jenkins.example.com
+```
+
+
+per esporre l'apache webserver ho editato il file haproxy.cfg in questo modo, seguendo la seguente guida https://blog.entrostat.com/routing-multiple-domains-using-haproxy-http-and-https-ssl/
+
+
+```
+[vagrant@localhost haproxy]$ cat haproxy.cfg
+# If you already have an haproxy.cfg file, you can probably leave the
+# global and defaults section as-is, but you might need to increase the
+# timeouts so that long-running CLI commands will work.
+global
+    maxconn 4096
+    # log 127.0.0.1 local0 debug
+    log /dev/log local0
+    chroot /var/lib/haproxy
+    pidfile /var/run/haproxy.pid
+
+defaults
+   log global
+   option httplog
+   option dontlognull
+   option forwardfor
+   maxconn 20
+   timeout connect 5s
+   timeout client 60s
+   timeout server 60s
+
+frontend http-in
+   bind *:80
+   mode http
+   # acl prefixed-with-jenkins  path_beg /jenkins/
+   acl host-is-jenkins-example   hdr(host) eq jenkins.example.com
+   # use_backend jenkins if host-is-jenkins-example prefixed-with-jenkins
+   use_backend jenkins 
+
+frontend https_bind
+   bind *:443
+   mode tcp
+   option tcplog
+   use_backend apache
+
+backend jenkins
+   server jenkins1 192.168.1.215:8080
+   mode http
+   reqrep ^([^\ :]*)\ /(.*) \1\ /\2
+   acl response-is-redirect res.hdr(Location) -m found
+   # Must combine following two lines into a SINGLE LINE for HAProxy
+   rspirep ^Location:\ (http|https)://192.168.1.215:8080/jenkins/(.*) Location:\ \1://jenkins.example.com/jenkins/\2 if response-is-redirect
+
+backend apache
+   server apache1 192.168.1.215:443
+   mode tcp
+```
+
+```
+ale@mint ~ $ curl http://192.168.1.199:443
+hello world
+
+ale@mint ~ $ curl http://jenkins.example.com
+<html><head><meta http-equiv='refresh' content='1;url=/login?from=%2F'/><script>window.location.replace('/login?from=%2F');</script></head><body style='background-color:white; color:white;'>
+
+
+Authentication required
+<!--
+You are authenticated as: anonymous
+Groups that you are in:
+  
+Permission you need to have (but didn't): hudson.model.Hudson.Read
+ ... which is implied by: hudson.security.Permission.GenericRead
+ ... which is implied by: hudson.model.Hudson.Administer
+-->
+
+</body></html>    
+
+```
+
+
